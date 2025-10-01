@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Zexma Bootloader — Web Updater</title>
+    <style>
+      :root {
+        font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI",
+          Roboto, "Helvetica Neue", Arial;
+      }
+      body {
+        max-width: 900px;
+        margin: 28px auto;
+        padding: 20px;
+      }
+      h1 {
+        font-size: 20px;
+        margin: 0 0 12px;
+      }
+      .row {
+        display: flex;
+        gap: 12px;
+        align-items: center;
+      }
+      button {
+        padding: 8px 12px;
+        border-radius: 8px;
+        border: 1px solid #ddd;
+        background: #fff;
+        cursor: pointer;
+      }
+      button.primary {
+        background: #0b74de;
+        color: #fff;
+        border: none;
+      }
+      pre#log {
+        height: 220px;
+        overflow: auto;
+        background: #0f1720;
+        color: #e6eef8;
+        padding: 12px;
+        border-radius: 8px;
+      }
+      input[type="file"] {
+        display: inline-block;
+      }
+      progress {
+        width: 100%;
+        height: 18px;
+      }
+      .meta {
+        margin-top: 12px;
+      }
+      .badge {
+        display: inline-block;
+        padding: 6px 8px;
+        border-radius: 8px;
+        background: #f0f4f8;
+        margin-right: 6px;
+      }
+      .small {
+        font-size: 13px;
+        color: #666;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Zexma bootloader — WebUSB firmware updater</h1>
+
+    <div class="row">
+      <button id="btnConnect" class="primary">🔌 Подключить устройство</button>
+      <input id="fileInput" type="file" accept=".bfc" />
+      <button id="btnStart" disabled>⬆️ Обновить прошивку</button>
+    </div>
+
+    <div class="meta">
+      <span class="badge" id="manufacturer">—</span>
+      <span class="badge" id="product">—</span>
+      <span class="badge" id="serial">—</span>
+      <div class="small" id="fwInfo">Информация о текущей прошивке: —</div>
+    </div>
+
+    <div style="margin-top: 14px">
+      <progress id="progress" value="0" max="1"></progress>
+    </div>
+
+    <pre id="log">
+Логовые сообщения...
+</pre
+    >
+
+    <script>
+      // Настройки — подставлены из твоих дескрипторов
+      const VENDOR_ID = 0x03ea;
+      const PRODUCT_ID = 0xb002;
+      const INTERFACE_NUMBER = 0; // интерфейс 0
+      const ENDPOINT_OUT = 1; // bulk OUT endpoint (python использует 0x01)
+      const ENDPOINT_IN = 1; // bulk IN endpoint address 0x81 -> number 1 for transferIn
+
+      let device = null;
+      let selectedFile = null;
+
+      const $ = (id) => document.getElementById(id);
+      function log(...args) {
+        const el = $("log");
+        el.textContent += "\n" + args.join(" ");
+        el.scrollTop = el.scrollHeight;
+      }
+
+      function setMeta({ manufacturer, product, serial }) {
+        $("manufacturer").textContent = manufacturer || "—";
+        $("product").textContent = product || "—";
+        $("serial").textContent = serial || "—";
+      }
+
+      async function connect() {
+        try {
+          log("Запрос устройства...");
+          const filters = [{ vendorId: VENDOR_ID, productId: PRODUCT_ID }];
+          const d = await navigator.usb.requestDevice({ filters });
+          device = d;
+          await openAndClaim();
+          log("Устройство подключено");
+          setMeta({
+            manufacturer: device.manufacturerName,
+            product: device.productName,
+            serial: device.serialNumber,
+          });
+          await readCurrentFirmware();
+          $("btnStart").disabled = !selectedFile;
+        } catch (e) {
+          log("Ошибка подключении:", e && e.message ? e.message : e);
+        }
+      }
+
+      async function openAndClaim() {
+        if (!device) throw new Error("Нет устройства");
+        if (!device.opened) {
+          await device.open();
+          log("device.open() выполнен");
+        }
+        if (device.configuration === null) {
+          await device.selectConfiguration(1);
+          log("Выбрана конфигурация 1");
+        }
+        try {
+          await device.claimInterface(INTERFACE_NUMBER);
+          log("Заявлен интерфейс", INTERFACE_NUMBER);
+        } catch (err) {
+          log("Не удалось заявить интерфейс:", err.message || err);
+          throw err;
+        }
+      }
+
+      // Вспомогательная функция для controlTransferOut с форматом похожим на python ctrl_transfer(0x41, bRequest, ... , data)
+      async function ctrlOut(request, dataArrayBuffer) {
+        // в WebUSB requestType и recipient определяем явно. Python использует bmRequestType=0x41.
+        // 0x41: host->device, type=vendor, recipient=interface (roughly). Используем recipient: 'interface'
+        return device.controlTransferOut(
+          {
+            requestType: "vendor",
+            recipient: "interface",
+            request: request,
+            value: 0,
+            index: 0,
+          },
+          dataArrayBuffer ? new Uint8Array(dataArrayBuffer) : undefined
+        );
+      }
+
+      async function readOnePacket(timeout = 3000) {
+        // transferIn(endpointNumber, length)
+        const res = await device.transferIn(ENDPOINT_IN, 64);
+        if (res.status !== "ok")
+          throw new Error("transferIn status: " + res.status);
+        return new Uint8Array(res.data.buffer);
+      }
+
+      function decodeNameAndVersion(header64) {
+        // header64 is Uint8Array length 64, same as python: name 0..15, version 16..19 little-endian
+        const nameBytes = header64.slice(0, 16);
+        const zeroIndex = nameBytes.indexOf(0);
+        const name = new TextDecoder("ascii", { fatal: false })
+          .decode(nameBytes.slice(0, zeroIndex >= 0 ? zeroIndex : undefined))
+          .replace(/\u0000/g, "")
+          .trim();
+        const verBytes = header64.slice(16, 20);
+        const verInt =
+          verBytes[0] |
+          (verBytes[1] << 8) |
+          (verBytes[2] << 16) |
+          (verBytes[3] << 24);
+        const verHex = ("00000000" + verInt.toString(16)).slice(-8);
+        const version =
+          verHex.slice(0, 2) +
+          "." +
+          verHex.slice(2, 5) +
+          "." +
+          verHex.slice(5, 8);
+        return { name: name || "---", version };
+      }
+
+      async function readCurrentFirmware() {
+        try {
+          log("Запрашиваю данные текущей прошивки...");
+          // python: device.ctrl_transfer(0x41, 1, 0, 0, [0x0]) then read
+          await ctrlOut(1, [0x0]);
+          const pkt = await readOnePacket();
+          if (pkt && pkt.length > 0) {
+            const info = decodeNameAndVersion(pkt.slice(1));
+            $(
+              "fwInfo"
+            ).textContent = `Текущая прошивка: ${info.name} v${info.version}`;
+            log("Текущая прошивка:", info.name, "v" + info.version);
+          } else {
+            log("Нет данных от устройства при запросе версии");
+          }
+        } catch (err) {
+          log("Ошибка чтения версии:", err && err.message ? err.message : err);
+        }
+      }
+
+      // Отправка заголовка (первые 64 байта)
+      async function sendHeader(header64) {
+        log(
+          "Отправляю запрос на передачу заголовка (controlTransferOut request=1, data=[0x1])"
+        );
+        await ctrlOut(1, [0x1]);
+        const pkt = await readOnePacket();
+        if (pkt[0] !== 1 && pkt[0] !== 0 && pkt[0] !== 2) {
+          // в python ожидали FirmwarePackets.Ready2ReceiveHeader == 1
+          // если не ready — ошибка
+          throw new Error(
+            "Устройство не готово принимать заголовок. Пакет[0]=" + pkt[0]
+          );
+        }
+        log(
+          "Устройство готово принимать заголовок, отправляю 64 байта через BULK OUT"
+        );
+        const res = await device.transferOut(ENDPOINT_OUT, header64);
+        if (res.status !== "ok")
+          throw new Error("transferOut header status: " + res.status);
+        log("Заголовок отправлен, читаю ответ...");
+        const headerResp = await readOnePacket();
+        if (headerResp[0] === 3) {
+          throw new Error("WrongHeader (устройство ответило 3)");
+        }
+        // headerResp содержит имя и версию (как в python)
+        const info = decodeNameAndVersion(headerResp.slice(1));
+        log("Заголовок принят, имя:", info.name, "версия v" + info.version);
+        return info;
+      }
+
+      async function requestBodyAndSend(firmwareBytes, onProgress) {
+        log(
+          "Запрос на отправку тела прошивки (controlTransferOut request=1, data=[2])"
+        );
+        // SoftwarePackets.RequestSendBody == 2
+        await ctrlOut(1, [2]);
+        const ready = await readOnePacket();
+        // FirmwarePackets.Ready2ReceiveBody == 4 in python enum
+        if (ready[0] !== 4) {
+          throw new Error(
+            "Устройство не готово принимать тело прошивки. Ответ: " + ready[0]
+          );
+        }
+        log("Устройство готово к приему тела прошивки, начинаю отправку...");
+
+        const CHUNK = 64;
+        let sent = 0;
+        const total = firmwareBytes.length;
+        for (let offset = 0; offset < total; offset += CHUNK) {
+          const slice = firmwareBytes.slice(
+            offset,
+            Math.min(offset + CHUNK, total)
+          );
+          const res = await device.transferOut(ENDPOINT_OUT, slice);
+          if (res.status !== "ok")
+            throw new Error("transferOut body status: " + res.status);
+          sent += slice.length;
+          onProgress(sent / total);
+        }
+        log("Отправка прошивки завершена, жду финального ответа...");
+        const final = await readOnePacket();
+        if (final[0] === 5) {
+          log("Прошивка обновлена успешно (код 5)");
+          return { ok: true };
+        } else {
+          log("Ошибка обновления, код:", final[0]);
+          return { ok: false, code: final[0] };
+        }
+      }
+
+      // UI handlers
+      $("btnConnect").addEventListener("click", connect);
+      $("fileInput").addEventListener("change", (ev) => {
+        const f = ev.target.files && ev.target.files[0];
+        if (!f) {
+          selectedFile = null;
+          $("btnStart").disabled = true;
+          return;
+        }
+        selectedFile = f;
+        log("Выбран файл", f.name, f.size, "байт");
+        $("btnStart").disabled = device == null;
+      });
+
+      $("btnStart").addEventListener("click", async () => {
+        if (!device) {
+          log("Сначала подключите устройство");
+          return;
+        }
+        if (!selectedFile) {
+          log("Сначала выберите .bfc файл");
+          return;
+        }
+        try {
+          // читаем файл
+          const arrayBuffer = await selectedFile.arrayBuffer();
+          const bytes = new Uint8Array(arrayBuffer);
+          if (bytes.length <= 64) {
+            log("Файл слишком маленький");
+            return;
+          }
+          const header = bytes.slice(0, 64);
+          const body = bytes.slice(64);
+
+          // 1) отправляем header (контролом запрос=1 data=[1], потом bulk out header)
+          const info = await sendHeader(header);
+          // Подтверждение от пользователя
+          if (
+            !confirm(
+              "Обновить прошивку на устройстве на: " +
+                info.name +
+                " v" +
+                info.version +
+                "?"
+            )
+          ) {
+            log("Пользователь отменил обновление");
+            return;
+          }
+
+          // 2) запросить ready и отправить тело
+          $("progress").value = 0;
+          const result = await requestBodyAndSend(body, (p) => {
+            $("progress").value = p;
+          });
+          if (result.ok) {
+            alert("Firmware update done");
+          } else {
+            alert("Firmware update error, code:" + result.code);
+          }
+        } catch (err) {
+          log(
+            "Ошибка во время обновления: " +
+              (err && err.message ? err.message : err)
+          );
+        }
+      });
+
+      // Автоматический attempt если уже было разрешение
+      (async function tryAuto() {
+        if (!("usb" in navigator)) {
+          log(
+            "WebUSB не поддерживается в браузере. Используйте Chrome/Edge с поддержкой WebUSB."
+          );
+          return;
+        }
+        try {
+          const devices = await navigator.usb.getDevices();
+          const found = devices.find(
+            (d) => d.vendorId === VENDOR_ID && d.productId === PRODUCT_ID
+          );
+          if (found) {
+            device = found;
+            await openAndClaim();
+            log("Автоматически подключено ранее разрешенное устройство");
+            setMeta({
+              manufacturer: device.manufacturerName,
+              product: device.productName,
+              serial: device.serialNumber,
+            });
+            await readCurrentFirmware();
+            $("btnStart").disabled = !selectedFile;
+          }
+        } catch (e) {
+          log("Авто-подключение не удалось:", e && e.message ? e.message : e);
+        }
+      })();
+    </script>
+  </body>
+</html>
