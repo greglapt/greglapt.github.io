@@ -1,372 +1,625 @@
 <!DOCTYPE html>
 <html lang="ru">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Zexma WebUSB Firmware Uploader</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Исправлен пробел -->
     <style>
-        body {
-            font-family: 'Inter', sans-serif;
-        }
-        .log-area {
-            font-family: 'Courier New', Courier, monospace;
-            background-color: #1E293B;
-            color: #E2E8F0;
-        }
+      body {
+        font-family: "Inter", sans-serif;
+      }
+      .log-area {
+        font-family: "Courier New", Courier, monospace;
+        background-color: #1e293b;
+        color: #e2e8f0;
+      }
     </style>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
-</head>
-<body class="bg-slate-100 dark:bg-slate-900 text-slate-800 dark:text-slate-200 flex items-center justify-center min-h-screen p-4">
-    
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <!-- Исправлен пробел -->
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body
+    class="bg-slate-100 dark:bg-slate-900 text-slate-800 dark:text-slate-200 flex items-center justify-center min-h-screen p-4"
+  >
     <!-- Сообщение о несовместимом браузере -->
-    <div id="browser-warning" class="hidden w-full max-w-2xl mx-auto p-6 md:p-8 bg-white dark:bg-slate-800 rounded-xl shadow-lg text-center">
-        <svg class="mx-auto h-12 w-12 text-red-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
-        </svg>
-        <h2 class="mt-4 text-2xl font-bold">Браузер не поддерживается</h2>
-        <p class="mt-2 text-slate-600 dark:text-slate-400">
-            Для работы с USB-устройствами через браузер требуется поддержка WebUSB API. 
-            Пожалуйста, используйте последнюю версию Google Chrome, Microsoft Edge или Opera.
-        </p>
+    <div
+      id="browser-warning"
+      class="hidden w-full max-w-2xl mx-auto p-6 md:p-8 bg-white dark:bg-slate-800 rounded-xl shadow-lg text-center"
+    >
+      <svg
+        class="mx-auto h-12 w-12 text-red-500"
+        xmlns="http://www.w3.org/2000/svg"
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke-width="1.5"
+        stroke="currentColor"
+      >
+        <path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z"
+        />
+      </svg>
+      <h2 class="mt-4 text-2xl font-bold">Браузер не поддерживается</h2>
+      <p class="mt-2 text-slate-600 dark:text-slate-400">
+        Для работы с USB-устройствами через браузер требуется поддержка WebUSB
+        API. Пожалуйста, используйте последнюю версию Google Chrome, Microsoft
+        Edge или Opera.
+      </p>
     </div>
 
     <!-- Основной контейнер приложения -->
-    <div id="main-container" class="w-full max-w-2xl mx-auto p-6 md:p-8 bg-white dark:bg-slate-800 rounded-xl shadow-lg">
-        <div class="flex items-center justify-between mb-6">
-            <h1 class="text-2xl font-bold">Zexma Firmware Uploader</h1>
-            <svg class="w-8 h-8 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M6.429 9.75L2.25 12l4.179 2.25m0-4.5l5.571 3 5.571-3m-11.142 0L2.25 12l4.179 2.25M6.429 15.75l5.571-3m5.571 3l-5.571-3M21.75 12l-4.179-2.25M17.571 15.75l-5.571-3m5.571 3l4.179-2.25M17.571 9.75L21.75 12M12 21.75l-4.179-2.25M12 2.25L16.179 4.5M12 2.25L7.821 4.5M12 21.75V12M12 2.25v9.75m0 0l-4.179 2.25m4.179-2.25L16.179 14.25" />
-            </svg>
-        </div>
+    <div
+      id="main-container"
+      class="w-full max-w-2xl mx-auto p-6 md:p-8 bg-white dark:bg-slate-800 rounded-xl shadow-lg"
+    >
+      <div class="flex items-center justify-between mb-6">
+        <h1 class="text-2xl font-bold">Zexma Firmware Uploader</h1>
+        <svg
+          class="w-8 h-8 text-blue-500"
+          xmlns="http://www.w3.org/2000/svg"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke-width="1.5"
+          stroke="currentColor"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            d="M6.429 9.75L2.25 12l4.179 2.25m0-4.5l5.571 3 5.571-3m-11.142 0L2.25 12l4.179 2.25M6.429 15.75l5.571-3m5.571 3l-5.571-3M21.75 12l-4.179-2.25M17.571 15.75l-5.571-3m5.571 3l4.179-2.25M17.571 9.75L21.75 12M12 21.75l-4.179-2.25M12 2.25L16.179 4.5M12 2.25L7.821 4.5M12 21.75V12M12 2.25v9.75m0 0l-4.179 2.25m4.179-2.25L16.179 14.25"
+          />
+        </svg>
+      </div>
 
-        <div id="status-panel" class="mb-4 p-4 rounded-lg bg-slate-100 dark:bg-slate-700">
-            <div class="flex justify-between items-center">
-                <div>
-                    <p class="font-semibold">Статус: <span id="device-status" class="text-red-500 font-bold">Устройство не подключено</span></p>
-                    <p class="text-sm text-slate-500 dark:text-slate-400">Прошивка: <span id="firmware-version">---</span></p>
-                </div>
-                <button id="connect-button" class="px-4 py-2 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 transition">
-                    Подключить
-                </button>
-            </div>
+      <div
+        id="status-panel"
+        class="mb-4 p-4 rounded-lg bg-slate-100 dark:bg-slate-700"
+      >
+        <div class="flex justify-between items-center">
+          <div>
+            <p class="font-semibold">
+              Статус:
+              <span id="device-status" class="text-red-500 font-bold"
+                >Устройство не подключено</span
+              >
+            </p>
+            <p class="text-sm text-slate-500 dark:text-slate-400">
+              Прошивка: <span id="firmware-version">---</span>
+            </p>
+          </div>
+          <button
+            id="connect-button"
+            class="px-4 py-2 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 transition"
+          >
+            Подключить
+          </button>
         </div>
+      </div>
 
-        <div id="update-panel" class="hidden">
-            <div class="mb-4">
-                <label for="file-input" class="block mb-2 font-medium">1. Выберите файл прошивки (.bfc)</label>
-                <input type="file" id="file-input" accept=".bfc" class="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"/>
-            </div>
-            <div class="mb-6">
-                <label class="block mb-2 font-medium">2. Обновите прошивку</label>
-                <button id="flash-button" disabled class="w-full px-4 py-3 bg-green-600 text-white font-bold rounded-lg hover:bg-green-700 disabled:bg-slate-400 disabled:cursor-not-allowed transition">
-                    Прошить устройство
-                </button>
-            </div>
-            <div class="mb-4">
-                <div class="w-full bg-gray-200 rounded-full dark:bg-gray-700">
-                    <div id="progress-bar" class="bg-blue-600 text-xs font-medium text-blue-100 text-center p-0.5 leading-none rounded-full" style="width: 0%">0%</div>
-                </div>
-            </div>
+      <div id="update-panel" class="hidden">
+        <div class="mb-4">
+          <label for="file-input" class="block mb-2 font-medium"
+            >1. Выберите файл прошивки (.bfc)</label
+          >
+          <input
+            type="file"
+            id="file-input"
+            accept=".bfc"
+            class="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+          />
         </div>
-        
-        <div>
-            <label for="log-area" class="block mb-2 font-medium">Лог выполнения</label>
-            <textarea id="log-area" rows="8" readonly class="w-full p-3 rounded-md border border-slate-300 dark:border-slate-600 log-area text-sm"></textarea>
+        <div class="mb-6">
+          <label class="block mb-2 font-medium">2. Обновите прошивку</label>
+          <button
+            id="flash-button"
+            disabled
+            class="w-full px-4 py-3 bg-green-600 text-white font-bold rounded-lg hover:bg-green-700 disabled:bg-slate-400 disabled:cursor-not-allowed transition"
+          >
+            Прошить устройство
+          </button>
         </div>
+        <div class="mb-4">
+          <div class="w-full bg-gray-200 rounded-full dark:bg-gray-700">
+            <div
+              id="progress-bar"
+              class="bg-blue-600 text-xs font-medium text-blue-100 text-center p-0.5 leading-none rounded-full"
+              style="width: 0%"
+            >
+              0%
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <label for="log-area" class="block mb-2 font-medium"
+          >Лог выполнения</label
+        >
+        <textarea
+          id="log-area"
+          rows="8"
+          readonly
+          class="w-full p-3 rounded-md border border-slate-300 dark:border-slate-600 log-area text-sm"
+        ></textarea>
+      </div>
     </div>
 
-    <!-- Модальное окно подтверждения -->
-    <div id="confirmation-modal" class="fixed inset-0 bg-black bg-opacity-70 hidden items-center justify-center z-50">
-        <div class="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-xl w-full max-w-md">
-            <h3 class="text-lg font-bold mb-4">Подтверждение прошивки</h3>
-            <p id="modal-text" class="mb-6 text-slate-600 dark:text-slate-300">Загрузить прошивку?</p>
-            <div class="flex justify-end gap-4">
-                <button id="modal-cancel" class="px-5 py-2 bg-slate-200 dark:bg-slate-600 text-slate-800 dark:text-slate-200 font-semibold rounded-lg hover:bg-slate-300 dark:hover:bg-slate-500 transition">Отмена</button>
-                <button id="modal-confirm" class="px-5 py-2 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700 transition">Продолжить</button>
-            </div>
+    <!-- Модальное окно подтверждения / успеха -->
+    <div
+      id="confirmation-modal"
+      class="fixed inset-0 bg-black bg-opacity-70 hidden items-center justify-center z-50"
+    >
+      <div
+        class="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-xl w-full max-w-md"
+      >
+        <!-- Содержимое подтверждения (изначальное) -->
+        <div id="modal-confirm-content">
+          <h3 class="text-lg font-bold mb-4">Подтверждение прошивки</h3>
+          <p id="modal-text" class="mb-6 text-slate-600 dark:text-slate-300">
+            Загрузить прошивку?
+          </p>
+          <div class="flex justify-end gap-4">
+            <button
+              id="modal-cancel"
+              class="px-5 py-2 bg-slate-200 dark:bg-slate-600 text-slate-800 dark:text-slate-200 font-semibold rounded-lg hover:bg-slate-300 dark:hover:bg-slate-500 transition"
+            >
+              Отмена
+            </button>
+            <button
+              id="modal-confirm"
+              class="px-5 py-2 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700 transition"
+            >
+              Продолжить
+            </button>
+          </div>
         </div>
+        <!-- Новое содержимое успеха -->
+        <div id="modal-success-content" class="hidden text-center">
+          <svg
+            class="mx-auto h-16 w-16 text-green-500"
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke-width="1.5"
+            stroke="currentColor"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"
+            />
+          </svg>
+          <h3 class="text-lg font-bold mb-2 text-green-600 dark:text-green-400">
+            Обновление успешно!
+          </h3>
+          <p class="mb-6 text-slate-600 dark:text-slate-300">
+            Прошивка устройства успешно завершена.
+          </p>
+          <button
+            id="modal-success-ok"
+            class="px-5 py-2 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700 transition"
+          >
+            ОК
+          </button>
+        </div>
+      </div>
     </div>
 
     <script type="module">
-        // --- Константы ---
-        const VID = 0x03EA, PID = 0xB002;
-        const INTERFACE_NUMBER = 0, ENDPOINT_IN = 1, ENDPOINT_OUT = 1;
-        const FirmwarePackets = { Ready2ReceiveHeader: 1, WrongHeader: 3, Ready2ReceiveBody: 4, FirmwareUpdateDone: 5 };
-        const SoftwarePackets = { GetCurrentFirmwareVersion: 0, RequestSendHeader: 1, RequestSendBody: 2 };
-        
-        // --- UI Элементы ---
-        const mainContainer = document.getElementById('main-container');
-        const browserWarning = document.getElementById('browser-warning');
-        const connectButton = document.getElementById('connect-button');
-        const deviceStatus = document.getElementById('device-status');
-        const firmwareVersion = document.getElementById('firmware-version');
-        const updatePanel = document.getElementById('update-panel');
-        const fileInput = document.getElementById('file-input');
-        const flashButton = document.getElementById('flash-button');
-        const progressBar = document.getElementById('progress-bar');
-        const logArea = document.getElementById('log-area');
-        const confirmationModal = document.getElementById('confirmation-modal');
-        const modalText = document.getElementById('modal-text');
-        const modalConfirm = document.getElementById('modal-confirm');
-        const modalCancel = document.getElementById('modal-cancel');
+      // --- Константы ---
+      const VID = 0x03ea,
+        PID = 0xb002;
+      const INTERFACE_NUMBER = 0,
+        ENDPOINT_IN = 1,
+        ENDPOINT_OUT = 1;
+      const FirmwarePackets = {
+        Ready2ReceiveHeader: 1,
+        WrongHeader: 3,
+        Ready2ReceiveBody: 4,
+        FirmwareUpdateDone: 5,
+      };
+      const SoftwarePackets = {
+        GetCurrentFirmwareVersion: 0,
+        RequestSendHeader: 1,
+        RequestSendBody: 2,
+      };
 
-        let firmwareFile = null;
+      // --- UI Элементы ---
+      const mainContainer = document.getElementById("main-container");
+      const browserWarning = document.getElementById("browser-warning");
+      const connectButton = document.getElementById("connect-button");
+      const deviceStatus = document.getElementById("device-status");
+      const firmwareVersion = document.getElementById("firmware-version");
+      const updatePanel = document.getElementById("update-panel");
+      const fileInput = document.getElementById("file-input");
+      const flashButton = document.getElementById("flash-button");
+      const progressBar = document.getElementById("progress-bar");
+      const logArea = document.getElementById("log-area");
+      const confirmationModal = document.getElementById("confirmation-modal");
+      const modalText = document.getElementById("modal-text");
+      const modalConfirm = document.getElementById("modal-confirm");
+      const modalCancel = document.getElementById("modal-cancel");
+      const modalConfirmContent = document.getElementById(
+        "modal-confirm-content"
+      ); // Новый элемент
+      const modalSuccessContent = document.getElementById(
+        "modal-success-content"
+      ); // Новый элемент
+      const modalSuccessOk = document.getElementById("modal-success-ok"); // Новый элемент
 
-        const log = (message) => {
-            logArea.value += `[${new Date().toLocaleTimeString()}] ${message}\n`;
-            logArea.scrollTop = logArea.scrollHeight;
-        };
+      let firmwareFile = null;
 
-        const parseFirmwareInfo = (dataView) => {
-            const decoder = new TextDecoder('ascii');
-            const nameBytes = new Uint8Array(dataView.buffer, dataView.byteOffset + 1, 16);
-            const zeroIndex = nameBytes.indexOf(0);
-            const name = decoder.decode(nameBytes.slice(0, zeroIndex !== -1 ? zeroIndex : 16));
-            
-            const versionInt = dataView.getUint32(17, true); // little-endian
-            const versionHex = versionInt.toString(16).padStart(8, '0');
-            const version = `v${versionHex.substring(0,2)}.${versionHex.substring(2,5)}.${versionHex.substring(5,8)}`;
-            return `${name} ${version}`;
-        };
+      const log = (message) => {
+        logArea.value += `[${new Date().toLocaleTimeString()}] ${message}\n`;
+        logArea.scrollTop = logArea.scrollHeight;
+      };
 
-        class DeviceHandler {
-            constructor() { this.device = null; }
-            async connect() { /* ... ( unchanged ) ... */ }
-            async disconnect() { /* ... ( unchanged ) ... */ }
-            async getFirmwareInfo() { /* ... ( unchanged ) ... */ }
-            
-            async startFirmwareUpload(fileBuffer) {
-                if (!this.device) throw new Error("Устройство не подключено");
+      const parseFirmwareInfo = (dataView) => {
+        const decoder = new TextDecoder("ascii");
+        const nameBytes = new Uint8Array(
+          dataView.buffer,
+          dataView.byteOffset + 1,
+          16
+        );
+        const zeroIndex = nameBytes.indexOf(0);
+        const name = decoder.decode(
+          nameBytes.slice(0, zeroIndex !== -1 ? zeroIndex : 16)
+        );
 
-                // Шаг 1: Запрос на отправку заголовка
-                log("Шаг 1/2: Отправка и проверка заголовка...");
-                await this.device.controlTransferOut({ requestType: 'vendor', recipient: 'interface', request: 1, value: 0, index: 0 }, new Uint8Array([SoftwarePackets.RequestSendHeader]));
-                let response = await this.device.transferIn(ENDPOINT_IN, 64);
-                if (response.data.getUint8(0) !== FirmwarePackets.Ready2ReceiveHeader) {
-                    throw new Error("Устройство не готово принять заголовок.");
-                }
+        const versionInt = dataView.getUint32(17, true); // little-endian
+        const versionHex = versionInt.toString(16).padStart(8, "0");
+        const version = `v${versionHex.substring(0, 2)}.${versionHex.substring(
+          2,
+          5
+        )}.${versionHex.substring(5, 8)}`;
+        return `${name} ${version}`;
+      };
 
-                // Шаг 2: Отправка заголовка и получение ответа
-                const header = fileBuffer.slice(0, 64);
-                await this.device.transferOut(ENDPOINT_OUT, header);
-                response = await this.device.transferIn(ENDPOINT_IN, 64);
-                if (response.data.getUint8(0) === FirmwarePackets.WrongHeader) {
-                    throw new Error("Файл прошивки не подходит для этого устройства.");
-                }
-
-                // Возвращаем информацию из заголовка для подтверждения
-                return parseFirmwareInfo(response.data);
-            }
-
-            async continueFirmwareUpload(fileBuffer) {
-                if (!this.device) throw new Error("Устройство не подключено");
-
-                const updateProgress = (value) => {
-                    const percent = Math.round(value);
-                    progressBar.style.width = `${percent}%`;
-                    progressBar.textContent = `${percent}%`;
-                };
-
-                try {
-                    // Шаг 3: Запрос на запись прошивки и стирание
-                    log("Шаг 2/2: Начало записи прошивки...");
-                    log("Стирание памяти... (может занять время)");
-                    await this.device.controlTransferOut({ requestType: 'vendor', recipient: 'interface', request: 1, value: 0, index: 0 }, new Uint8Array([SoftwarePackets.RequestSendBody]));
-                    let response = await this.device.transferIn(ENDPOINT_IN, 64);
-                    if (response.data.getUint8(0) !== FirmwarePackets.Ready2ReceiveBody) {
-                        throw new Error("Устройство не готово к приему тела прошивки.");
-                    }
-                    
-                    // Шаг 4: Запись данных
-                    log("Запись данных...");
-                    const firmwareData = fileBuffer.slice(64);
-                    const totalSize = firmwareData.byteLength;
-                    let sentSize = 0;
-                    while (sentSize < totalSize) {
-                        const chunk = firmwareData.slice(sentSize, sentSize + 64);
-                        await this.device.transferOut(ENDPOINT_OUT, chunk);
-                        sentSize += chunk.byteLength;
-                        updateProgress((sentSize / totalSize) * 100);
-                    }
-
-                    // Шаг 5: Завершение
-                    log("Завершение и проверка статуса...");
-                    response = await this.device.transferIn(ENDPOINT_IN, 64);
-                    if (response.data.getUint8(0) === FirmwarePackets.FirmwareUpdateDone) {
-                        log("Прошивка успешно завершена!");
-                        updateProgress(100);
-                    } else {
-                        throw new Error("Ошибка на стороне устройства после записи.");
-                    }
-                } catch (e) {
-                    log(`КРИТИЧЕСКАЯ ОШИБКА: ${e.message}`);
-                    updateProgress(0);
-                    throw e;
-                }
-            }
+      class DeviceHandler {
+        constructor() {
+          this.device = null;
         }
-        
-        // --- Инициализация и логика UI ---
-        
-        // Проверка совместимости браузера
-        if (!navigator.usb) {
-            mainContainer.classList.add('hidden');
-            browserWarning.classList.remove('hidden');
-        } else {
-            const handler = new DeviceHandler();
-
-            const updateUI = (isConnected) => {
-                if (isConnected) {
-                    deviceStatus.textContent = 'Подключено';
-                    deviceStatus.className = 'text-green-500 font-bold';
-                    connectButton.textContent = 'Отключить';
-                    updatePanel.classList.remove('hidden');
-                } else {
-                    deviceStatus.textContent = 'Устройство не подключено';
-                    deviceStatus.className = 'text-red-500 font-bold';
-                    connectButton.textContent = 'Подключить';
-                    firmwareVersion.textContent = '---';
-                    updatePanel.classList.add('hidden');
-                    flashButton.disabled = true;
-                    firmwareFile = null;
-                    if(fileInput) fileInput.value = '';
-                    progressBar.style.width = '0%';
-                    progressBar.textContent = '0%';
-                }
-            };
-            
-            const setControlsEnabled = (enabled) => {
-                connectButton.disabled = !enabled;
-                fileInput.disabled = !enabled;
-                flashButton.disabled = !enabled;
-            };
-
-            connectButton.addEventListener('click', async () => {
-                if (handler.device) {
-                    await handler.disconnect();
-                    updateUI(false);
-                } else {
-                    if (await handler.connect()) {
-                        updateUI(true);
-                        try {
-                            const fw = await handler.getFirmwareInfo();
-                            firmwareVersion.textContent = fw;
-                            log(`Текущая прошивка: ${fw}`);
-                        } catch (e) {
-                            firmwareVersion.textContent = "Ошибка чтения";
-                        }
-                    } else {
-                        updateUI(false);
-                    }
-                }
-            });
-            
-            fileInput.addEventListener('change', (event) => {
-                const file = event.target.files[0];
-                if (file) {
-                    const reader = new FileReader();
-                    reader.onload = (e) => {
-                        firmwareFile = e.target.result; // ArrayBuffer
-                        log(`Выбран файл: ${file.name}, размер: ${firmwareFile.byteLength} байт`);
-                        flashButton.disabled = false;
-                    };
-                    reader.readAsArrayBuffer(file);
-                } else {
-                    firmwareFile = null;
-                    flashButton.disabled = true;
-                }
-            });
-
-            flashButton.addEventListener('click', async () => {
-                if (!firmwareFile || !handler.device) {
-                    log('Сначала подключите устройство и выберите файл прошивки.');
-                    return;
-                }
-                
-                setControlsEnabled(false);
-                progressBar.style.width = '0%';
-                progressBar.textContent = '0%';
-
-                try {
-                    const firmwareInfoFromDevice = await handler.startFirmwareUpload(firmwareFile);
-                    modalText.innerHTML = `Устройство сообщает, что это прошивка:<br><strong class="text-blue-500 dark:text-blue-400 font-semibold my-2 block">${firmwareInfoFromDevice}</strong>Продолжить обновление?`;
-                    confirmationModal.classList.remove('hidden');
-                    confirmationModal.classList.add('flex');
-                } catch (e) {
-                    log(`Ошибка на начальном этапе: ${e.message}`);
-                    setControlsEnabled(true);
-                }
-            });
-
-            modalConfirm.addEventListener('click', async () => {
-                confirmationModal.classList.add('hidden');
-                confirmationModal.classList.remove('flex');
-                try {
-                    await handler.continueFirmwareUpload(firmwareFile);
-                    log('Процесс завершен.');
-                } catch(e) {
-                    log(`Ошибка во время записи: ${e.message}`);
-                } finally {
-                    setControlsEnabled(true);
-                    await handler.disconnect();
-                    updateUI(false);
-                }
-            });
-            
-            modalCancel.addEventListener('click', () => {
-                confirmationModal.classList.add('hidden');
-                confirmationModal.classList.remove('flex');
-                log('Обновление отменено пользователем.');
-                setControlsEnabled(true);
-            });
-            
-            log('Страница готова. Нажмите "Подключить" для поиска устройства.');
+        async connect() {
+          /* ... ( unchanged ) ... */
+        }
+        async disconnect() {
+          /* ... ( unchanged ) ... */
+        }
+        async getFirmwareInfo() {
+          /* ... ( unchanged ) ... */
         }
 
-        // --- Реализация методов DeviceHandler (неизменные части) ---
-        DeviceHandler.prototype.connect = async function() {
-            try {
-                log('Запрос на подключение к устройству...');
-                this.device = await navigator.usb.requestDevice({ filters: [{ vendorId: VID, productId: PID }] });
-                log(`Устройство найдено: ${this.device.productName}`);
-                await this.device.open();
-                log('Устройство открыто');
-                if (this.device.configuration === null) { await this.device.selectConfiguration(1); }
-                await this.device.claimInterface(INTERFACE_NUMBER);
-                log(`Интерфейс ${INTERFACE_NUMBER} успешно затребован.`);
-                return true;
-            } catch (e) {
-                log(`Ошибка подключения: ${e.message}`);
-                this.device = null;
-                return false;
+        async startFirmwareUpload(fileBuffer) {
+          if (!this.device) throw new Error("Устройство не подключено");
+
+          // Шаг 1: Запрос на отправку заголовка
+          log("Шаг 1/2: Отправка и проверка заголовка...");
+          await this.device.controlTransferOut(
+            {
+              requestType: "vendor",
+              recipient: "interface",
+              request: 1,
+              value: 0,
+              index: 0,
+            },
+            new Uint8Array([SoftwarePackets.RequestSendHeader])
+          );
+          let response = await this.device.transferIn(ENDPOINT_IN, 64);
+          if (
+            response.data.getUint8(0) !== FirmwarePackets.Ready2ReceiveHeader
+          ) {
+            throw new Error("Устройство не готово принять заголовок.");
+          }
+
+          // Шаг 2: Отправка заголовка и получение ответа
+          const header = fileBuffer.slice(0, 64);
+          await this.device.transferOut(ENDPOINT_OUT, header);
+          response = await this.device.transferIn(ENDPOINT_IN, 64);
+          if (response.data.getUint8(0) === FirmwarePackets.WrongHeader) {
+            throw new Error("Файл прошивки не подходит для этого устройства.");
+          }
+
+          // Возвращаем информацию из заголовка для подтверждения
+          return parseFirmwareInfo(response.data);
+        }
+
+        async continueFirmwareUpload(fileBuffer) {
+          if (!this.device) throw new Error("Устройство не подключено");
+
+          const updateProgress = (value) => {
+            const percent = Math.round(value);
+            progressBar.style.width = `${percent}%`;
+            progressBar.textContent = `${percent}%`;
+          };
+
+          try {
+            // Шаг 3: Запрос на запись прошивки и стирание
+            log("Шаг 2/2: Начало записи прошивки...");
+            log("Стирание памяти... (может занять время)");
+            await this.device.controlTransferOut(
+              {
+                requestType: "vendor",
+                recipient: "interface",
+                request: 1,
+                value: 0,
+                index: 0,
+              },
+              new Uint8Array([SoftwarePackets.RequestSendBody])
+            );
+            let response = await this.device.transferIn(ENDPOINT_IN, 64);
+            if (
+              response.data.getUint8(0) !== FirmwarePackets.Ready2ReceiveBody
+            ) {
+              throw new Error("Устройство не готово к приему тела прошивки.");
             }
-        };
-        DeviceHandler.prototype.disconnect = async function() {
-            if (!this.device) return;
-            try {
-                await this.device.releaseInterface(INTERFACE_NUMBER);
-                await this.device.close();
-                log('Устройство отключено.');
-            } catch (e) {
-                log(`Ошибка при отключении: ${e.message}`);
+
+            // Шаг 4: Запись данных
+            log("Запись данных...");
+            const firmwareData = fileBuffer.slice(64);
+            const totalSize = firmwareData.byteLength;
+            let sentSize = 0;
+            while (sentSize < totalSize) {
+              const chunk = firmwareData.slice(sentSize, sentSize + 64);
+              await this.device.transferOut(ENDPOINT_OUT, chunk);
+              sentSize += chunk.byteLength;
+              updateProgress((sentSize / totalSize) * 100);
             }
-            this.device = null;
-        };
-        DeviceHandler.prototype.getFirmwareInfo = async function() {
-            if (!this.device) throw new Error("Устройство не подключено");
-            try {
-                await this.device.controlTransferOut({ requestType: 'vendor', recipient: 'interface', request: 1, value: 0, index: 0 }, new Uint8Array([SoftwarePackets.GetCurrentFirmwareVersion]));
-                const result = await this.device.transferIn(ENDPOINT_IN, 64);
-                return parseFirmwareInfo(result.data);
-            } catch (e) {
-                log(`Ошибка чтения версии: ${e.message}`);
-                throw e;
+
+            // Шаг 5: Завершение
+            log("Завершение и проверка статуса...");
+            response = await this.device.transferIn(ENDPOINT_IN, 64);
+            if (
+              response.data.getUint8(0) === FirmwarePackets.FirmwareUpdateDone
+            ) {
+              log("Прошивка успешно завершена!");
+              updateProgress(100);
+              return true; // Сообщаем об успехе
+            } else {
+              throw new Error("Ошибка на стороне устройства после записи.");
             }
+          } catch (e) {
+            log(`КРИТИЧЕСКАЯ ОШИБКА: ${e.message}`);
+            updateProgress(0);
+            throw e;
+          }
+        }
+      }
+
+      // --- Инициализация и логика UI ---
+
+      // Проверка совместимости браузера
+      if (!navigator.usb) {
+        mainContainer.classList.add("hidden");
+        browserWarning.classList.remove("hidden");
+      } else {
+        const handler = new DeviceHandler();
+
+        navigator.usb.addEventListener("disconnect", (event) => {
+          // Проверяем, что отключенное устройство - это то, с которым мы работаем
+          if (handler.device && handler.device === event.device) {
+            log("ВНИМАНИЕ: Устройство было физически отключено.");
+            handler.device = null; // Сбрасываем объект устройства
+            updateUI(false); // Обновляем интерфейс до состояния "не подключено"
+          }
+        });
+
+        const updateUI = (isConnected) => {
+          if (isConnected) {
+            deviceStatus.textContent = "Подключено";
+            deviceStatus.className = "text-green-500 font-bold";
+            connectButton.textContent = "Отключить";
+            updatePanel.classList.remove("hidden");
+          } else {
+            deviceStatus.textContent = "Устройство не подключено";
+            deviceStatus.className = "text-red-500 font-bold";
+            connectButton.textContent = "Подключить";
+            firmwareVersion.textContent = "---";
+            updatePanel.classList.add("hidden");
+            flashButton.disabled = true;
+            firmwareFile = null;
+            if (fileInput) fileInput.value = "";
+            progressBar.style.width = "0%";
+            progressBar.textContent = "0%";
+          }
         };
+
+        const setControlsEnabled = (enabled) => {
+          connectButton.disabled = !enabled;
+          fileInput.disabled = !enabled;
+          flashButton.disabled = !enabled;
+        };
+
+        connectButton.addEventListener("click", async () => {
+          if (handler.device) {
+            await handler.disconnect();
+            updateUI(false);
+          } else {
+            if (await handler.connect()) {
+              updateUI(true);
+              try {
+                const fw = await handler.getFirmwareInfo();
+                firmwareVersion.textContent = fw;
+                log(`Текущая прошивка: ${fw}`);
+              } catch (e) {
+                firmwareVersion.textContent = "Ошибка чтения";
+              }
+            } else {
+              updateUI(false);
+            }
+          }
+        });
+
+        fileInput.addEventListener("change", (event) => {
+          const file = event.target.files[0];
+          if (file) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+              firmwareFile = e.target.result; // ArrayBuffer
+              log(
+                `Выбран файл: ${file.name}, размер: ${firmwareFile.byteLength} байт`
+              );
+              flashButton.disabled = false;
+            };
+            reader.readAsArrayBuffer(file);
+          } else {
+            firmwareFile = null;
+            flashButton.disabled = true;
+          }
+        });
+
+        flashButton.addEventListener("click", async () => {
+          if (!firmwareFile || !handler.device) {
+            log("Сначала подключите устройство и выберите файл прошивки.");
+            return;
+          }
+
+          setControlsEnabled(false);
+          progressBar.style.width = "0%";
+          progressBar.textContent = "0%";
+
+          try {
+            const firmwareInfoFromDevice = await handler.startFirmwareUpload(
+              firmwareFile
+            );
+            modalText.innerHTML = `Устройство сообщает, что это прошивка:<br><strong class="text-blue-500 dark:text-blue-400 font-semibold my-2 block">${firmwareInfoFromDevice}</strong>Продолжить обновление?`;
+            modalConfirmContent.classList.remove("hidden"); // Показываем содержимое подтверждения
+            modalSuccessContent.classList.add("hidden"); // Скрываем содержимое успеха
+            confirmationModal.classList.remove("hidden");
+            confirmationModal.classList.add("flex");
+          } catch (e) {
+            log(`Ошибка на начальном этапе: ${e.message}`);
+            setControlsEnabled(true);
+          }
+        });
+
+        modalConfirm.addEventListener("click", async () => {
+          confirmationModal.classList.add("hidden");
+          confirmationModal.classList.remove("flex");
+          try {
+            const success = await handler.continueFirmwareUpload(firmwareFile); // Получаем результат
+            if (success) {
+              // Если обновление прошло успешно
+              log("Процесс завершен.");
+              // Показываем сообщение об успехе
+              modalConfirmContent.classList.add("hidden"); // Скрываем содержимое подтверждения
+              modalSuccessContent.classList.remove("hidden"); // Показываем содержимое успеха
+              confirmationModal.classList.remove("hidden"); // Показываем модальное окно
+              confirmationModal.classList.add("flex"); // Показываем модальное окно
+            }
+          } catch (e) {
+            log(`Ошибка во время записи: ${e.message}`);
+            setControlsEnabled(true);
+            await handler.disconnect(); // Отключаемся в случае ошибки
+            updateUI(false);
+          }
+        });
+
+        modalCancel.addEventListener("click", () => {
+          confirmationModal.classList.add("hidden");
+          confirmationModal.classList.remove("flex");
+          log("Обновление отменено пользователем.");
+          setControlsEnabled(true);
+        });
+
+        // Обработчик для кнопки "ОК" в сообщении об успехе
+        modalSuccessOk.addEventListener("click", async () => {
+          // Сделаем функцию асинхронной
+          confirmationModal.classList.add("hidden");
+          confirmationModal.classList.remove("flex");
+
+          // Попытаемся получить новую информацию о прошивке
+          try {
+            log(
+              "Обновление завершено. Попытка чтения новой версии прошивки..."
+            );
+            // Убедимся, что устройство все еще подключено
+            if (handler.device) {
+              // Вызываем метод получения версии
+              const newFw = await handler.getFirmwareInfo();
+              firmwareVersion.textContent = newFw;
+              log(`Новая прошивка: ${newFw}`);
+            } else {
+              // Если устройство не подключено, возможно, оно перезагрузилось и еще не готово
+              log(
+                "Устройство не найдено для чтения новой версии. Возможно, оно перезагружается."
+              );
+              firmwareVersion.textContent = "---";
+            }
+          } catch (e) {
+            // Обработка ошибки при чтении версии
+            log(`Не удалось прочитать новую версию прошивки: ${e.message}`);
+            firmwareVersion.textContent = "Ошибка чтения";
+            // Можно добавить здесь логику повторной попытки или уведомления пользователя
+          }
+
+          // Опционально: включить элементы управления снова, если нужно
+          setControlsEnabled(true);
+          // Важно: не вызываем updateUI(false), так как устройство может быть все еще подключено.
+          // Лучше оставить статус как есть и обновить только версию.
+        });
+
+        log('Страница готова. Нажмите "Подключить" для поиска устройства.');
+      }
+
+      // --- Реализация методов DeviceHandler (неизменные части) ---
+      DeviceHandler.prototype.connect = async function () {
+        try {
+          log("Запрос на подключение к устройству...");
+          this.device = await navigator.usb.requestDevice({
+            filters: [{ vendorId: VID, productId: PID }],
+          });
+          log(`Устройство найдено: ${this.device.productName}`);
+          await this.device.open();
+          log("Устройство открыто");
+          if (this.device.configuration === null) {
+            await this.device.selectConfiguration(1);
+          }
+          await this.device.claimInterface(INTERFACE_NUMBER);
+          log(`Интерфейс ${INTERFACE_NUMBER} успешно затребован.`);
+          return true;
+        } catch (e) {
+          log(`Ошибка подключения: ${e.message}`);
+          this.device = null;
+          return false;
+        }
+      };
+      DeviceHandler.prototype.disconnect = async function () {
+        if (!this.device) return;
+        try {
+          await this.device.releaseInterface(INTERFACE_NUMBER);
+          await this.device.close();
+          log("Устройство отключено.");
+        } catch (e) {
+          log(`Ошибка при отключении: ${e.message}`);
+        }
+        this.device = null;
+      };
+      DeviceHandler.prototype.getFirmwareInfo = async function () {
+        if (!this.device) throw new Error("Устройство не подключено");
+        try {
+          await this.device.controlTransferOut(
+            {
+              requestType: "vendor",
+              recipient: "interface",
+              request: 1,
+              value: 0,
+              index: 0,
+            },
+            new Uint8Array([SoftwarePackets.GetCurrentFirmwareVersion])
+          );
+          const result = await this.device.transferIn(ENDPOINT_IN, 64);
+          return parseFirmwareInfo(result.data);
+        } catch (e) {
+          log(`Ошибка чтения версии: ${e.message}`);
+          throw e;
+        }
+      };
     </script>
-</body>
+  </body>
 </html>
-
